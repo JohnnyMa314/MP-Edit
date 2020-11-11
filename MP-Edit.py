@@ -14,9 +14,12 @@ from transformers import AutoModelWithLMHead, AutoTokenizer, AutoModelForMaskedL
 from transformers import BartTokenizer, BartForConditionalGeneration
 import torch
 from tqdm import tqdm
+from scipy.special import softmax
 import string
 from fairseq.models.bart import BARTModel
 import datetime
+import gc
+from fairseq.data.data_utils import collate_tokens
 
 def train_NLI(train_df, n_epoch, out_dir):
     args = {
@@ -40,20 +43,20 @@ def gen_MP_Edits_IMDB(df, num_reviews, fill_models, n_grams, nlp, bart, scorer):
                                  'gold-label'])  # setup
 
     # for each review, get sentences, mask content words, replace mask with Mask-Fill top predictions
-    for review in tqdm(df[0:int(num_reviews)]):
-        text = review['text']
+    for index, row in tqdm(df[0:int(num_lines)].iterrows(), total=df[0:int(num_lines)].shape[0]):
+        text = row['text']
         sentences = nlp(text).sents
         j = 0
         for sentence in sentences:
             sentence = nlp(sentence.text)
             if 5 < len(sentence) < 30:  # if sentence has more than 5 and less than 30 tokens.
                 for token in sentence:
-                    if token.pos_ == 'NOUN' or token.pos_ == 'ADJ' or token.pos_ == 'VERB':  # spacy POS for content
+                    if token.pos_ == 'NOUN' or token.pos_ == 'ADJ' or token.pos_ == 'VERB' and token.text != '':  # spacy POS for content
                         for N in n_grams:
                             ngrams = [sentence[i:i + N] for i in
                                       range(token.i - N + 1, token.i + 1)]  # get ngrams around content token
                             for ngram in ngrams:
-                                if 'BART' in fill_models:
+                                if 'BART' in fill_models and ngram.text != '':
                                     masked_sent = sentence.text.replace(ngram.text, '<mask>')  # mask each ngram
                                     candidates = bart.fill_mask(masked_sent, topk=10, beam=10, match_source_len=False)
 
@@ -69,7 +72,7 @@ def gen_MP_Edits_IMDB(df, num_reviews, fill_models, n_grams, nlp, bart, scorer):
 
                                     new_token = ' '.join(list((Counter(filled_sent.split(' ')) - Counter(
                                         masked_sent.split(' '))).keys()))  # get new words
-                                    data = data.append({'review-num': review.index,
+                                    data = data.append({'review-num': index,
                                                         'sentence-num': j,
                                                         'pred-model': 'imdb-BaseBert',
                                                         'fill-model': 'BaseBart',
@@ -82,9 +85,8 @@ def gen_MP_Edits_IMDB(df, num_reviews, fill_models, n_grams, nlp, bart, scorer):
                                                             nlp(filled_sent)),
                                                         'Bert-Score': scorer.score([sentence.text], [filled_sent])[
                                                             2].item(),
-                                                        'gold-label': df.iloc[i].label}, ignore_index=True)
+                                                        'gold-label': row.label}, ignore_index=True)
             j += 1
-        i += 1
         data.to_csv('output/' + str(num_reviews) + '_imdb.csv')
 
     return data
@@ -114,13 +116,14 @@ def gen_MP_Edits_NLI(df, num_lines, fill_models, n_grams, nlp, bart, scorer, fil
                     for N in n_grams:
                         ngrams = [sentence[i:i + N] for i in range(token.i - N + 1, token.i + 1)]  # get ngrams around content token
                         for ngram in ngrams:
-                            if 'BART' in fill_models:
+                            if 'BART' in fill_models and ngram.text != '':
                                 masked_sent = sentence.text.replace(ngram.text, '<mask>')  # mask each ngram
                                 candidates = [(sent, prob) for sent, prob in
-                                              bart.fill_mask(masked_sent, topk=5, beam=5, match_source_len=False)]
-
+                                              bart.fill_mask(masked_sent, topk=3, beam=10, match_source_len=False)]
+                                print(candidates)
+                                print(candidates[::-1])
                                 # evaluating fill in candidates. add more filters later.
-                                for sent, prob in candidates:
+                                for sent, prob in candidates[::-1]:
                                     new_token = ' '.join(
                                         list((Counter(sent.split(' ')) - Counter(
                                             sent.split(' '))).keys()))  # get new words
@@ -143,25 +146,26 @@ def gen_MP_Edits_NLI(df, num_lines, fill_models, n_grams, nlp, bart, scorer, fil
                                                     'Word2Vec-Score': nlp(sentence.text).similarity(nlp(filled_sent)),
                                                     'token-similarity': nlp(ngram.text).similarity(nlp(new_token)),
                                                     'Bert-Score': scorer.score([sentence.text], [filled_sent])[2].item(),
-                                                    'gold-label': df.iloc[index].labels}, ignore_index=True)
+                                                    'gold-label': row.labels}, ignore_index=True)
 
         # change hypothesis
         text = row['text_b']
         sentence = nlp(text)
         if 5 < len(sentence) < 30:  # if sentence has more than 5 and less than 30 tokens.
             for token in sentence:
-                if token.pos_ == 'NOUN' or token.pos_ == 'ADJ' or token.pos_ == 'VERB':  # spacy POS for content
+                if token.pos_ == 'NOUN' or token.pos_ == 'ADJ' or token.pos_ == 'VERB' and token.text != '':  # spacy POS for content
                     for N in n_grams:
                         ngrams = [sentence[i:i + N] for i in
                                   range(token.i - N + 1, token.i + 1)]  # get ngrams around content token
                         for ngram in ngrams:
-                            if 'BART' in fill_models:
+                            if 'BART' in fill_models and ngram.text != '':
                                 masked_sent = sentence.text.replace(ngram.text, '<mask>')  # mask each ngram
                                 candidates = [(sent, prob) for sent, prob in
-                                              bart.fill_mask(masked_sent, topk=5, beam=5, match_source_len=False)]
-
+                                              bart.fill_mask(masked_sent, topk=3, beam=10, match_source_len=False)]
+                                print(candidates)
+                                print(candidates[::-1])
                                 # evaluating fill in candidates. add more filters later.
-                                for sent, prob in candidates:
+                                for sent, prob in candidates[::-1]:
                                     new_token = ' '.join(
                                         list((Counter(sent.split(' ')) - Counter(
                                             sent.split(' '))).keys()))  # get new words
@@ -184,7 +188,7 @@ def gen_MP_Edits_NLI(df, num_lines, fill_models, n_grams, nlp, bart, scorer, fil
                                                     'Word2Vec-Score': nlp(sentence.text).similarity(nlp(filled_sent)),
                                                     'token-similarity': nlp(ngram.text).similarity(nlp(new_token)),
                                                     'Bert-Score': scorer.score([sentence.text], [filled_sent])[2].item(),
-                                                    'gold-label': df.iloc[index].labels}, ignore_index=True)
+                                                    'gold-label': row.labels}, ignore_index=True)
 
         hypos.to_csv(filename + '_hypos.csv')
         prems.to_csv(filename + '_prems.csv')
@@ -197,52 +201,131 @@ def predict_on_MP_imdb(df, imdb_model, num_lines):
     mask_sents = np.array(df['mask-filled'])
 
     # generating predictions from fine tuned model
-    orig_preds, raw_outputs = imdb_model.predict(orgi_sents)
-    mask_preds, raw_outputs = imdb_model.predict(mask_sents)
+    orig_preds, orig_raw_outputs = imdb_model.predict(orgi_sents)
+    mask_preds, mask_raw_outputs = imdb_model.predict(mask_sents)
+
+    # probabilities of classes
+    orig_prob = softmax(orig_raw_outputs, axis=1)
+    mask_prob = softmax(mask_raw_outputs, axis=1)
+
+    # probability of original class
+    mask_probs = []
+    for i in range(len(mask_preds)):
+        mask_probs.append(mask_prob[i, orig_preds[i]])
+
+    orig_probs = []
+    for i in range(len(orig_preds)):
+        orig_probs.append(orig_prob[i, orig_preds[i]])
+
+    # putting into data
+    df['orig-label'] = orig_preds
+    df['new-label'] = mask_preds
+    df['orig-label-prob'] = [round(float(i), 2) for i in orig_probs]
+    df['new-label-prob'] = [round(float(i), 2) for i in mask_probs]
 
     #print('changed labels: ' + "{0:.00%}".format((sum(orig_preds != mask_preds) / len(mask_preds))))  # 7%
 
-    df['label'] = orig_preds
-    df['new-label'] = mask_preds
+    # changes to labels
+    df['label-changed'] = (df['orig-label'] != df['new-label'])
+    df['label-prob-diff'] = np.abs(df['orig-label-prob'] - df['new-label-prob'])
 
-    df['label-changed'] = (df['label'] != df['new-label'])
-    df[df['label-changed'] == True].to_csv('output/' + str(num_lines) + '_imdb_contrast.csv')  # counterfactuals only
+    # TEMPORARY SOLUTION TO BAD BART INFILLLINGS
+    df = df[df['Word2Vec-Score'] > 0.8]
 
     return df
 
 # predicting 
-def predict_on_MP_NLI(df, snli_model, num_lines, changed_sentence):
-    # filling in model predictions for each sentence
+def predict_on_MP_NLI(df, NLI_model, num_lines, changed_sentence):
+    # filling in model predictions and probabilities for each sentence
+    mask_sent = df['mask-filled']
+    masked_pairs = []
+    orig_pairs = []
+
     if changed_sentence == "premise":
-        mask_sents = df[['mask-filled', 'hypothesis']]  
+        orig_sent = df['premise']
+        unchanged = df['hypothesis']
+        for i in range(len(mask_sent)):
+            masked_pairs.append([mask_sent[i], unchanged[i]])
+            orig_pairs.append([orig_sent[i], unchanged[i]])
+        
     if changed_sentence == "hypothesis":
-        mask_sents = df[['premise', 'mask-filled']]
-    else:
-        print("Please chose premise or hypothesis for changed sentence.")
+        orig_sent = df['hypothesis']
+        unchanged = df['premise']
+        for i in range(len(mask_sent)):
+            masked_pairs.append([unchanged[i], mask_sent[i]])
+            orig_pairs.append([unchanged[i], orig_sent[i]])
+ 
+    # generating batch predictions from fine tuned model
+    mask_batch = collate_tokens([NLI_model.encode(pair[0], pair[1]) for pair in masked_pairs], pad_idx=1)
+    orig_batch = collate_tokens([NLI_model.encode(pair[0], pair[1]) for pair in orig_pairs], pad_idx=1)
 
-    # generating predictions from fine tuned model
-    mask_preds = []
-    for i in tqdm(range(0, len(mask_sents))):
-        mask_preds.append(snli_model.predict([list(mask_sents.iloc[i])])[0][0])
+    # cut into smaller batches to store on GPU mem
+    batch_size = 16
+    mask_batches = [mask_batch[i * batch_size:(i + 1) * batch_size] for i in range((len(mask_batch) + batch_size - 1) // batch_size )]
+    orig_batches = [orig_batch[i * batch_size:(i + 1) * batch_size] for i in range((len(orig_batch) + batch_size - 1) // batch_size )]  
 
-    df['label'] = df['gold-label']
+    # use lists for speed
+    mask_logprobs = []
+    orig_logprobs = []
+    mask_logprobs = torch.Tensor().cuda()
+    orig_logprobs = torch.Tensor().cuda()
+
+    torch.cuda.empty_cache()
+    with torch.no_grad():
+        for i in tqdm(range(len(mask_batches))):
+            mbatch = mask_batches[i].cuda()
+            obatch = orig_batches[i].cuda()
+            mask_logprobs = torch.cat((mask_logprobs, NLI_model.predict('mnli', mbatch)), 0)
+            orig_logprobs = torch.cat((orig_logprobs, NLI_model.predict('mnli', obatch)), 0)
+            
+            # required for memory
+            del mbatch
+            del obatch
+            gc.collect()
+            
+    # list of tensors into tensor list
+
+    mask_preds = mask_logprobs.argmax(axis=1).to('cpu')
+    orig_preds = orig_logprobs.argmax(axis=1).to('cpu')
+
+    mask_logprobs = mask_logprobs.to('cpu')
+    orig_logprobs = orig_logprobs.to('cpu')
+
+    # filling out probabilities of original class.
+    mask_probs = []
+    for i in range(len(mask_preds)):
+        mask_probs.append(round(float(np.exp(mask_logprobs[i,[orig_preds[i].item()]]).item()), 2))
+
+    orig_probs = []
+    for i in range(len(orig_preds)):
+        orig_probs.append(round(float(np.exp(orig_logprobs[i,[orig_preds[i].item()]]).item()), 2))
+
+    # putting into data
+    df['orig-label'] = orig_preds
     df['new-label'] = mask_preds
+    df['orig-label-prob'] = orig_probs
+    df['new-label-prob'] = mask_probs
+
+    df['label-changed'] = df['orig-label'] != df['new-label']
 
     # labels. fix later.
-    df[df['label'] == 0] = 'entailment'
-    df[df['label'] == 1] = 'neutral'
-    df[df['label'] == 2] = 'contradiction'
+    df.loc[df['orig-label'] == 0, ['orig-label']] = 'contradiction'
+    df.loc[df['orig-label'] == 1, ['orig-label']] = 'neutral'
+    df.loc[df['orig-label'] == 2, ['orig-label']] = 'entailment'
 
-    df[df['new-label'] == 0] = 'entailment'
-    df[df['new-label'] == 1] = 'neutral'
-    df[df['new-label'] == 2] = 'contradiction'
+    df.loc[df['new-label'] == 0, ['new-label']] = 'contradiction'
+    df.loc[df['new-label'] == 1, ['new-label']] = 'neutral'
+    df.loc[df['new-label'] == 2, ['new-label']] = 'entailment'
 
-    print('changed: ' + "{0:.00%}".format(sum(df['label'] != df['new-label'])/len(df['label'])))
+    print('changed: ' + "{0:.00%}".format(sum(orig_preds != mask_preds)/len(mask_preds)))
 
-    df['label-changed'] = (df['label'] != df['new-label'])
-    contrast_set = df[df['label-changed'] == 1]
+    df['label-prob-diff'] = [np.abs(i-j) for i, j in zip(orig_probs,mask_probs)]
 
-    return contrast_set
+    #TEMPORARY SOLUTION TO BUGGY BART INFILLING 
+    df = df[df['Word2Vec-Score'] > 0.8]
+    contrast_set = df[df['label-changed'] == True]
+
+    return df, contrast_set
 
 # computing metrics for a tagged data frame
 def compute_metrics(tagged_df):
@@ -406,33 +489,46 @@ def main(dataset, num_lines, data_action):
             imdb_model = ClassificationModel("bert", "bert-imdb/checkpoint-15000-epoch-3", use_cuda = use_cuda)
             imdb_pairs = pd.read_csv('output/' + str(num_lines) + '_imdb.csv')
             tagged_imdb = predict_on_MP_imdb(imdb_pairs, imdb_model, len(imdb_pairs))
-            tagged_imdb.to_csv('output/' + str(num_lines) + '_imdb_contrast.csv')
+            imdb_contrast = tagged_imdb[tagged_imdb['label-changed'] == True]
+
+            imdb_contrast.to_csv('output/' + str(num_lines) + '_imdb_contrast.csv')
+            tagged_imdb.to_csv('output/' + str(num_lines) + '_imdb_tagged.csv')
 
         if 'MNLI' in dataset:
             # reading
-            MNLI_model = ClassificationModel("roberta", "roberta-mnli/checkpoint-146688-epoch-3", use_cuda = use_cuda)
+            MNLI_Roberta = torch.hub.load('pytorch/fairseq', 'roberta.large.mnli')
+            if torch.cuda.is_available():
+                MNLI_Roberta.cuda()
+
+            #MNLI_model = ClassificationModel("roberta", "roberta-mnli/checkpoint-146688-epoch-3", use_cuda = use_cuda)
             mnli_hypos = pd.read_csv('output/' + str(num_lines) + '_mnli_hypos.csv')
             mnli_prems = pd.read_csv('output/' + str(num_lines) + '_mnli_prems.csv')
 
             # tagging
-            tagged_hypos_mnli = predict_on_MP_NLI(mnli_hypos, MNLI_model, len(mnli_hypos), 'hypothesis')
-            tagged_prems_mnli = predict_on_MP_NLI(mnli_prems, MNLI_model, len(mnli_prems), 'premise')
-            tagged_hypos_mnli.to_csv('output/' + str(num_lines) + '_mnli_hypos_contrast.csv')
-            tagged_prems_mnli.to_csv('output/' + str(num_lines) + '_mnli_prems_contrast.csv')
+            mnli_tagged_hypos, mnli_contrast_hypos = predict_on_MP_NLI(mnli_hypos, MNLI_Roberta, len(mnli_hypos), 'hypothesis')
+            mnli_tagged_prems, mnli_contrast_prems = predict_on_MP_NLI(mnli_prems, MNLI_Roberta, len(mnli_prems), 'premise')
+            mnli_tagged_hypos.to_csv('output/' + str(num_lines) + '_mnli_tagged_hypos.csv')
+            mnli_tagged_prems.to_csv('output/' + str(num_lines) + '_mnli_tagged_prems.csv')
+
+            mnli_contrast_hypos.to_csv('output/' + str(num_lines) + '_mnli_contrast_hypos.csv')
+            mnli_contrast_prems.to_csv('output/' + str(num_lines) + '_mnli_contrast_prems.csv')
 
         if 'SNLI' in dataset:
             # reading 
-            SNLI_model = ClassificationModel("roberta", "roberta-snli/checkpoint-114291-epoch-3", use_cuda = use_cuda)
+            MNLI_Roberta = torch.hub.load('pytorch/fairseq', 'roberta.large.mnli')
+            MNLI_Roberta.eval()
+            if torch.cuda.is_available():
+                MNLI_Roberta.cuda()
+
+            #SNLI_model = ClassificationModel("roberta", "roberta-snli/checkpoint-114291-epoch-3", use_cuda = use_cuda)
             snli_hypos = pd.read_csv('output/' + str(num_lines) + '_snli_hypos.csv')
             snli_prems = pd.read_csv('output/' + str(num_lines) + '_snli_prems.csv')
 
             # tagging
-            tagged_hypos_snli = predict_on_MP_NLI(snli_hypos, SNLI_model, len(snli_hypos), 'hypothesis')
-            tagged_prems_snli = predict_on_MP_NLI(snli_prems, SNLI_model, len(snli_prems), 'premise')
-            tagged_hypos_snli.to_csv('output/' + str(num_lines) + '_snli_hypos_contrast.csv')
-            tagged_prems_snli.to_csv('output/' + str(num_lines) + '_snli_prems_contrast.csv')
-    
-
+            snli_tagged_hypos, snli_contrast_hypos = predict_on_MP_NLI(snli_hypos, MNLI_Roberta, len(snli_hypos), 'hypothesis')
+            snli_tagged_prems, snli_contrast_prems = predict_on_MP_NLI(snli_prems, MNLI_Roberta, len(snli_prems), 'premise')
+            snli_tagged_hypos.to_csv('output/' + str(num_lines) + '_snli_tagged_hypos.csv')
+            snli_tagged_prems.to_csv('output/' + str(num_lines) + '_snli_tagged_prems.csv')
 
     # compute metrics and make figures
     # compute_metrics(tagged_df)
@@ -499,6 +595,4 @@ if __name__ == '__main__':
 
 #     return imdb_model
 
-
-# ### Generate Minimal Edit Sentence Pairs by Content N-Gram Mask Filling
 
