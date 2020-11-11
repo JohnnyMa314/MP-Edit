@@ -25,16 +25,16 @@ Finally, we will crowdsource labels for correct and incorrect label flips, which
 MP-Edit.py takes three arguments: `dataset`, `num_lines`, and `data_action`. 
 
 `Datasets` available are: 
-- IMDB: IMDB Sentiment Classification
-- SNLI: SNLI Entailment Task
-- MNLI: MNLI Entailment Task
+- `IMDB`: IMDB Sentiment Classification
+- `SNLI`: SNLI Entailment Task
+- `MNLI`: MNLI Entailment Task
 
-`Number of lines` determines the number of data instances to generate minimal pairs for. 
+`Number of lines` determines the number of data instances to generate minimal pairs for, iterating over content words (NOUN, VERB, ADJ) and their surrounding ngrams (1,2,3). 
 
 `Data actions` available are:
-- Train: Fine-tune transformer model on dataset
-- Generate: Generate minimal pair edits using BART mask-infilling
-- Predict: Run prediction model over generated sentence edits.
+- `Train`: Fine-tune transformer model on dataset
+- `Generate`: Generate minimal pair edits using BART mask-infilling
+- `Predict`: Run prediction model over generated sentence edits.
 
 e.g. `python3.8 MP-Edit.py MNLI 1000 Generate`
 
