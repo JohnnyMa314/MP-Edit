@@ -254,7 +254,9 @@ def predict_on_MP_NLI(df, NLI_model, num_lines, changed_sentence):
         for i in range(len(mask_sent)):
             masked_pairs.append([unchanged[i], mask_sent[i]])
             orig_pairs.append([unchanged[i], orig_sent[i]])
- 
+    if changed_sentence != 'hypothesis' and changed_sentence != 'premise':
+        print("Please chose premise or hypothesis for changed sentence.")
+
     # generating batch predictions from fine tuned model
     mask_batch = collate_tokens([NLI_model.encode(pair[0], pair[1]) for pair in masked_pairs], pad_idx=1)
     orig_batch = collate_tokens([NLI_model.encode(pair[0], pair[1]) for pair in orig_pairs], pad_idx=1)
@@ -270,6 +272,7 @@ def predict_on_MP_NLI(df, NLI_model, num_lines, changed_sentence):
     mask_logprobs = torch.Tensor().cuda()
     orig_logprobs = torch.Tensor().cuda()
 
+    # generate predictions in batches
     torch.cuda.empty_cache()
     with torch.no_grad():
         for i in tqdm(range(len(mask_batches))):
@@ -292,18 +295,23 @@ def predict_on_MP_NLI(df, NLI_model, num_lines, changed_sentence):
     orig_logprobs = orig_logprobs.to('cpu')
 
     # filling out probabilities of original class.
-    mask_probs = []
+    same_probs = []
     for i in range(len(mask_preds)):
-        mask_probs.append(round(float(np.exp(mask_logprobs[i,[orig_preds[i].item()]]).item()), 2))
+        same_probs.append(round(float(np.exp(mask_logprobs[i,[orig_preds[i].item()]]).item()), 2))
 
     orig_probs = []
     for i in range(len(orig_preds)):
         orig_probs.append(round(float(np.exp(orig_logprobs[i,[orig_preds[i].item()]]).item()), 2))
 
+    mask_probs = []
+    for i in range(len(orig_preds)):
+        mask_probs.append(round(float(np.exp(mask_logprobs[i,[mask_preds[i].item()]]).item()), 2))
+
     # putting into data
     df['orig-label'] = orig_preds
     df['new-label'] = mask_preds
     df['orig-label-prob'] = orig_probs
+    df['same-label-prob'] = same_probs
     df['new-label-prob'] = mask_probs
 
     df['label-changed'] = df['orig-label'] != df['new-label']
@@ -319,7 +327,7 @@ def predict_on_MP_NLI(df, NLI_model, num_lines, changed_sentence):
 
     print('changed: ' + "{0:.00%}".format(sum(orig_preds != mask_preds)/len(mask_preds)))
 
-    df['label-prob-diff'] = [np.abs(i-j) for i, j in zip(orig_probs,mask_probs)]
+    df['same-label-prob-diff'] = [np.abs(i-j) for i, j in zip(orig_probs, same_probs)]
 
     #TEMPORARY SOLUTION TO BUGGY BART INFILLING 
     df = df[df['Word2Vec-Score'] > 0.8]
@@ -344,6 +352,11 @@ def compute_metrics(tagged_df):
     filled_words = [make_tuple(w1)[1] for w1 in CS_data['token_changes']]
     filled_count = Counter(filled_words)
     print(filled_count)
+
+    # count of label switches in contrast set
+    switches = zip(CS_data['orig-label'], CS_data['new-label'])
+    switch_changes = Counter(switches)
+    print(switch_changes)
 
 # creating similarity plots
 def similarity_figures(tagged_df, scoring_func):
@@ -513,6 +526,9 @@ def main(dataset, num_lines, data_action):
             mnli_contrast_hypos.to_csv('output/' + str(num_lines) + '_mnli_contrast_hypos.csv')
             mnli_contrast_prems.to_csv('output/' + str(num_lines) + '_mnli_contrast_prems.csv')
 
+            compute_metrics(mnli_tagged_hypos)
+            compute_metrics(mnli_tagged_prems)
+
         if 'SNLI' in dataset:
             # reading 
             MNLI_Roberta = torch.hub.load('pytorch/fairseq', 'roberta.large.mnli')
@@ -596,3 +612,8 @@ if __name__ == '__main__':
 #     return imdb_model
 
 
+test = pd.read_csv('MP-Edit/output/MNLI/840_mnli_tagged_hypos.csv')
+
+switches = zip(test['orig-label'], test['new-label'])
+switch_changes = Counter(switches)
+print(switch_changes)

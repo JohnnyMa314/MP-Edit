@@ -40,13 +40,23 @@ e.g. `python3.8 MP-Edit.py MNLI 1000 Generate`
 
 The outputted datasets or models will be found in the working directory under 'output' and 'models' respectively. 
 
+## Results
+
+For num_lines = 840, MNLI label flips on hypothesis mask-infilling.
+
+|  Original ->  | Entailment | Neutral | Contradiction |
+|:-------------:|:----------:|:-------:|:-------------:|
+|   Entailment  |    5181    |   315   |      387      |
+|    Neutral    |    1472    |   5734  |      763      |
+| Contradiction |     850    |   432   |      4828     |
+
 ## TO DO:
 
 11-4-20
 - [x] Create flexible command line Train-Generate-Predict data pipeline
 - [x] Setup Github and data folders
 - [x] Reconfigure Transformers architecture for SNLI
-- [ ] Find clusters of mask-change and sentence-change occurences
+- [x] Find clusters of mask-change and sentence-change occurences
 - [ ] Create gradient policy for mask-infilling (positional) using label flip as reward
 
 10-29-20
