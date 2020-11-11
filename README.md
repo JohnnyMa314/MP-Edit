@@ -20,12 +20,36 @@ Once we have the generator, we can cluster patterns that flip the model predicti
 
 Finally, we will crowdsource labels for correct and incorrect label flips, which allows us to augment our training data with a model-in-the-loop generated counterfactuals. 
 
+## Running MP-Edit.py
+
+MP-Edit.py takes three arguments: `dataset`, `number of lines`, and `data action`. 
+
+Datasets available are: 
+`
+- IMDB: IMDB Sentiment Classification
+- SNLI: SNLI Entailment Task
+- MNLI: MNLI Entailment Task
+`
+
+Number of lines determines the number of data instances to generate minimal pairs for. 
+
+Data actions available are:
+`
+- Train: Fine-tune transformer model on dataset
+- Generate: Generate minimal pair edits using BART mask-infilling
+- Predict: Run prediction model over generated sentence edits.
+`
+
+e.g. `python3.8 MP-Edit.py MNLI 1000 Generate`
+
+The outputted datasets or models will be found in the working directory under 'output' and 'models' respectively. 
+
 ## TO DO:
 
 11-4-20
 - [x] Create flexible command line Train-Generate-Predict data pipeline
 - [x] Setup Github and data folders
-- [ ] Reconfigure Transformers architecture for SNLI
+- [x] Reconfigure Transformers architecture for SNLI
 - [ ] Find clusters of mask-change and sentence-change occurences
 - [ ] Create gradient policy for mask-infilling (positional) using label flip as reward
 
