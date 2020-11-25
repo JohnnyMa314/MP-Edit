@@ -60,6 +60,9 @@ def gen_MP_Edits_IMDB(df, num_reviews, fill_models, n_grams, nlp, bart, scorer):
                                     masked_sent = sentence.text.replace(ngram.text, '<mask>')  # mask each ngram
                                     candidates = bart.fill_mask(masked_sent, topk=10, beam=10, match_source_len=False)
 
+                                    probs = [prob.item() for sent, prob in candidates]
+                                    print(probs)
+
                                     # evaluating fill in candidates. add more filters later.
                                     for sent, prob in candidates:
                                         new_token = ' '.join(
@@ -91,6 +94,79 @@ def gen_MP_Edits_IMDB(df, num_reviews, fill_models, n_grams, nlp, bart, scorer):
 
     return data
 
+def gen_MPs_NLI(df, num_lines, fill_models, n_grams, nlp, bart, scorer, filename):
+    if 'mnli' in filename:
+        pred_model = 'mnli-roberta'
+    if 'snli' in filename:
+        pred_model = 'snli-roberta'
+    # predefine dataframe
+    cond_gens = pd.DataFrame(columns=['line-num', 'pred-model', 'fill-model',
+                                 'premise', 'hypothesis', 'mask-filled', 'token_changes', 'fill_prob', 'n_gram', 'Word2Vec-Score',
+                                 'Bert-Score', 'gold-label'])  # setup
+
+    # for each review, get sentences, mask content words, replace mask with Mask-Fill top predictions
+    for index, row in tqdm(df[0:int(num_lines)].iterrows(), total=df[0:int(num_lines)].shape[0]):
+        # change hypothesis
+        text = row['text_b']  
+        sentence = nlp(text)
+        if 5 < len(sentence) < 30 and 5 < len(nlp(row['text_a'])) < 30:  # if either sentence has more than 5 and less than 30 tokens.
+            for token in sentence:
+                if token.pos_ == 'NOUN' or token.pos_ == 'ADJ' or token.pos_ == 'VERB' and token.text != '':  # spacy POS for content
+                    for N in n_grams:
+                        ngrams = [sentence[i:i + N] for i in range(token.i - N + 1, token.i + 1)]  # get ngrams around content token
+                        for ngram in ngrams:
+                            if 'BART' in fill_models and ngram.text != '':
+                                # Mask NGRAM (NEEDS TO BE FIXED, REPLACE -> INDEX BASED REMOVAL OF NGRAM)
+                                masked_hypo = sentence.text.replace(ngram.text, '<mask>')
+                                # concatenate sentences together with fairseq's [SEP] token.
+                                masked_pair = row['text_a'] + ' </s> ' + masked_hypo
+                                print('Masked Premise-Hypo Pair: ' + masked_pair + '\n')  # mask each ngram
+                                candidates = [(sent, prob.item()) for sent, prob in 
+                                    bart.fill_mask(masked_pair, topk = 10, beam=10, match_source_len=False)]
+                                
+                                # turn into readable probabilities, remove premise conditional
+                                sents = [sent.replace(row['text_a'] + ' </s> ', '').replace('</s>', '').replace(row['text_a'], '').replace('<br>', '').replace('<s>', '').replace('<', '').replace('>', '') for sent, prob in candidates]
+                                probs = [prob for sent, prob in candidates]
+                                probs = softmax(probs)
+                                
+                                # sample from topk examples, with filters
+                                gen = True
+                                thresh = 0
+                                while gen is True:
+                                    thresh = thresh + 1
+                                    sent = random.choices(sents, weights=probs, k=1)[0]
+                                    print(sent + '\n')
+                                    new_token = ' '.join(
+                                        list((Counter(sent.split(' ')) - Counter(
+                                            sent.split(' '))).keys()))  # get new words
+                                    if sentence.text != sent and new_token not in STOP_WORDS:
+                                        filled_sent = sent
+                                        token_prob = str(round(probs[sents.index(sent)]*100, 2)) + '%'
+                                        gen = False
+                                    if thresh > 50:
+                                        gen = False 
+
+                                new_token = ' '.join(list((Counter(filled_sent.split(' ')) - Counter(
+                                        masked_hypo.split(' '))).keys()))  # get new tokens
+                                cond_gens = cond_gens.append({'line-num': index,
+                                                        'pred-model': pred_model,
+                                                        'fill-model': 'BartLargeMNLI',
+                                                        'premise': row['text_a'],
+                                                        'hypothesis': sentence.text,
+                                                        'mask-filled': filled_sent,
+                                                        'token_changes': (ngram.text, new_token),
+                                                        'fill_prob': token_prob,
+                                                        'n_gram': N,
+                                                        'Word2Vec-Score': nlp(sentence.text).similarity(nlp(filled_sent)),
+                                                        'token-similarity': nlp(ngram.text).similarity(nlp(new_token)),
+                                                        'Bert-Score': scorer.score([sentence.text], [filled_sent])[2].item(),
+                                                        'gold-label': row.labels}, ignore_index=True)
+
+        cond_gens.to_csv(filename + '_cond_pairs.csv')
+
+    return cond_gens
+
+
 def gen_MP_Edits_NLI(df, num_lines, fill_models, n_grams, nlp, bart, scorer, filename):
     if 'mnli' in filename:
         pred_model = 'mnli-roberta'
@@ -117,78 +193,84 @@ def gen_MP_Edits_NLI(df, num_lines, fill_models, n_grams, nlp, bart, scorer, fil
                         ngrams = [sentence[i:i + N] for i in range(token.i - N + 1, token.i + 1)]  # get ngrams around content token
                         for ngram in ngrams:
                             if 'BART' in fill_models and ngram.text != '':
-                                masked_sent = sentence.text.replace(ngram.text, '<mask>')  # mask each ngram
-                                candidates = [(sent, prob) for sent, prob in
-                                              bart.fill_mask(masked_sent, topk=3, beam=10, match_source_len=False)]
-                                print(candidates)
-                                print(candidates[::-1])
+                                masked_sent = sentence.text.replace(ngram.text, '<mask>')
+                                print('Masked Sentence: ' + masked_sent + '\n')  # mask each ngram
+                                candidates = [(sent, prob) for sent, prob in 
+                                bart.fill_mask(masked_sent, topk = 20, beam=20, diversity_rate = 0.1, match_source_len=False)]
+                                
+                                probs = [prob.item() for sent, prob in candidates]
+                                print(softmax(probs))
+                                print(len(probs))
+                                
                                 # evaluating fill in candidates. add more filters later.
-                                for sent, prob in candidates[::-1]:
+                                for sent, prob in candidates:
+                                    print(sent)
                                     new_token = ' '.join(
                                         list((Counter(sent.split(' ')) - Counter(
                                             sent.split(' '))).keys()))  # get new words
                                     if sentence.text != sent and new_token not in STOP_WORDS:
                                         filled_sent = sent
-                                        token_prob = prob
-                                        break
+                                        token_prob = str(round(prob, 2) * 100) + '%'
+                                        #break
 
-                                new_token = ' '.join(list((Counter(filled_sent.split(' ')) - Counter(
-                                    masked_sent.split(' '))).keys()))  # get new words
-                                prems = prems.append({'line-num': index,
-                                                    'pred-model': pred_model,
-                                                    'fill-model': 'BaseBart',
-                                                    'premise': sentence.text,
-                                                    'hypothesis': row['text_b'],
-                                                    'mask-filled': filled_sent,
-                                                    'token_changes': (ngram.text, new_token),
-                                                    'fill_prob': token_prob.item(),
-                                                    'n_gram': N,
-                                                    'Word2Vec-Score': nlp(sentence.text).similarity(nlp(filled_sent)),
-                                                    'token-similarity': nlp(ngram.text).similarity(nlp(new_token)),
-                                                    'Bert-Score': scorer.score([sentence.text], [filled_sent])[2].item(),
-                                                    'gold-label': row.labels}, ignore_index=True)
+                                        new_token = ' '.join(list((Counter(filled_sent.split(' ')) - Counter(
+                                            masked_sent.split(' '))).keys()))  # get new words
+                                        prems = prems.append({'line-num': index,
+                                                            'pred-model': pred_model,
+                                                            'fill-model': 'BartLargeMNLI',
+                                                            'premise': sentence.text,
+                                                            'hypothesis': row['text_b'],
+                                                            'mask-filled': filled_sent,
+                                                            'token_changes': (ngram.text, new_token),
+                                                            'fill_prob': token_prob,
+                                                            'n_gram': N,
+                                                            'Word2Vec-Score': nlp(sentence.text).similarity(nlp(filled_sent)),
+                                                            'token-similarity': nlp(ngram.text).similarity(nlp(new_token)),
+                                                            'Bert-Score': scorer.score([sentence.text], [filled_sent])[2].item(),
+                                                            'gold-label': row.labels}, ignore_index=True)
 
-        # change hypothesis
-        text = row['text_b']
-        sentence = nlp(text)
-        if 5 < len(sentence) < 30:  # if sentence has more than 5 and less than 30 tokens.
-            for token in sentence:
-                if token.pos_ == 'NOUN' or token.pos_ == 'ADJ' or token.pos_ == 'VERB' and token.text != '':  # spacy POS for content
-                    for N in n_grams:
-                        ngrams = [sentence[i:i + N] for i in
-                                  range(token.i - N + 1, token.i + 1)]  # get ngrams around content token
-                        for ngram in ngrams:
-                            if 'BART' in fill_models and ngram.text != '':
-                                masked_sent = sentence.text.replace(ngram.text, '<mask>')  # mask each ngram
-                                candidates = [(sent, prob) for sent, prob in
-                                              bart.fill_mask(masked_sent, topk=3, beam=10, match_source_len=False)]
-                                print(candidates)
-                                print(candidates[::-1])
-                                # evaluating fill in candidates. add more filters later.
-                                for sent, prob in candidates[::-1]:
-                                    new_token = ' '.join(
-                                        list((Counter(sent.split(' ')) - Counter(
-                                            sent.split(' '))).keys()))  # get new words
-                                    if sentence.text != sent and new_token not in STOP_WORDS:
-                                        filled_sent = sent
-                                        token_prob = prob
-                                        break
+        # # change hypothesis
+        # text = row['text_b']
+        # sentence = nlp(text)
+        # if 5 < len(sentence) < 30:  # if sentence has more than 5 and less than 30 tokens.
+        #     for token in sentence:
+        #         if token.pos_ == 'NOUN' or token.pos_ == 'ADJ' or token.pos_ == 'VERB' and token.text != '':  # spacy POS for content
+        #             for N in n_grams:
+        #                 ngrams = [sentence[i:i + N] for i in
+        #                           range(token.i - N + 1, token.i + 1)]  # get ngrams around content token
+        #                 for ngram in ngrams:
+        #                     if 'BART' in fill_models and ngram.text != '':
+        #                         masked_sent = sentence.text.replace(ngram.text, '<mask>')  # mask each ngram (NEEDS TO BE FIXED, NEED REPLACEMENT OF NGRAMS INSTEAD OF BROAD REPLACEMENT)
+        #                         print('Masked Sentence: ' + str(masked_sent) + '\n') 
+        #                         candidates = [(sent, prob) for sent, prob in
+        #                                       bart.fill_mask(masked_sent, topk = 20, beam = 20, match_source_len=False)]
+                                
 
-                                new_token = ' '.join(list((Counter(filled_sent.split(' ')) - Counter(
-                                    masked_sent.split(' '))).keys()))  # get new words
-                                hypos = hypos.append({'line-num': index,
-                                                    'pred-model': pred_model,
-                                                    'fill-model': 'BaseBart',
-                                                    'premise': row['text_a'],
-                                                    'hypothesis': sentence.text,
-                                                    'mask-filled': filled_sent,
-                                                    'token_changes': (ngram.text, new_token),
-                                                    'fill_prob': token_prob.item(),
-                                                    'n_gram': N,
-                                                    'Word2Vec-Score': nlp(sentence.text).similarity(nlp(filled_sent)),
-                                                    'token-similarity': nlp(ngram.text).similarity(nlp(new_token)),
-                                                    'Bert-Score': scorer.score([sentence.text], [filled_sent])[2].item(),
-                                                    'gold-label': row.labels}, ignore_index=True)
+        #                         # evaluating fill in candidates. add more filters later.
+        #                         for sent, prob in candidates:
+        #                             new_token = ' '.join(
+        #                                 list((Counter(sent.split(' ')) - Counter(
+        #                                     sent.split(' '))).keys()))  # get new words
+        #                             if sentence.text != sent and new_token not in STOP_WORDS:
+        #                                 filled_sent = sent
+        #                                 token_prob = prob
+        #                                 #break
+
+        #                                 new_token = ' '.join(list((Counter(filled_sent.split(' ')) - Counter(
+        #                                     masked_sent.split(' '))).keys()))  # get new words
+        #                                 hypos = hypos.append({'line-num': index,
+        #                                                     'pred-model': pred_model,
+        #                                                     'fill-model': 'BartLargeMNLI',
+        #                                                     'premise': row['text_a'],
+        #                                                     'hypothesis': sentence.text,
+        #                                                     'mask-filled': filled_sent,
+        #                                                     'token_changes': (ngram.text, new_token),
+        #                                                     'fill_prob': token_prob.item(),
+        #                                                     'n_gram': N,
+        #                                                     'Word2Vec-Score': nlp(sentence.text).similarity(nlp(filled_sent)),
+        #                                                     'token-similarity': nlp(ngram.text).similarity(nlp(new_token)),
+        #                                                     'Bert-Score': scorer.score([sentence.text], [filled_sent])[2].item(),
+        #                                                     'gold-label': row.labels}, ignore_index=True)
 
         hypos.to_csv(filename + '_hypos.csv')
         prems.to_csv(filename + '_prems.csv')
@@ -231,6 +313,7 @@ def predict_on_MP_imdb(df, imdb_model, num_lines):
 
     # TEMPORARY SOLUTION TO BAD BART INFILLLINGS
     df = df[df['Word2Vec-Score'] > 0.8]
+    df = df[df['Word2Vec-SCore'] != 1]
 
     return df
 
@@ -256,10 +339,10 @@ def predict_on_MP_NLI(df, NLI_model, num_lines, changed_sentence):
             orig_pairs.append([unchanged[i], orig_sent[i]])
     if changed_sentence != 'hypothesis' and changed_sentence != 'premise':
         print("Please chose premise or hypothesis for changed sentence.")
-
+   
     # generating batch predictions from fine tuned model
-    mask_batch = collate_tokens([NLI_model.encode(pair[0], pair[1]) for pair in masked_pairs], pad_idx=1)
-    orig_batch = collate_tokens([NLI_model.encode(pair[0], pair[1]) for pair in orig_pairs], pad_idx=1)
+    mask_batch = collate_tokens([NLI_model.encode(str(pair[0]), str(pair[1])) for pair in masked_pairs], pad_idx=1)
+    orig_batch = collate_tokens([NLI_model.encode(str(pair[0]), str(pair[1])) for pair in orig_pairs], pad_idx=1)
 
     # cut into smaller batches to store on GPU mem
     batch_size = 16
@@ -480,10 +563,16 @@ def main(dataset, num_lines, data_action):
 
     ## TASK: MASK-INFILL CONTENT NGRAMS WITH BART MODEL.
     if data_action == 'Generate':
-        # loading NLP packages
+        # loading NLP packages and mask-fill model
         nlp = spacy.load('en_core_web_lg')
         scorer = BERTScorer(lang="en")
-        bart = BARTModel.from_pretrained('bart.base', checkpoint_file='model.pt')
+        if 'IMDB' in dataset:
+            bart = torch.hub.load('pytorch/fairseq', 'bart.large')
+        if 'MNLI' in dataset:
+            bart = torch.hub.load('pytorch/fairseq', 'bart.large')
+        if 'SNLI' in dataset: 
+            bart = torch.hub.load('pytorch/fairseq', 'bart.large')
+
         bart.eval()
         if torch.cuda.is_available():
             bart.cuda()
@@ -492,9 +581,9 @@ def main(dataset, num_lines, data_action):
         if 'IMDB' in dataset:
             imdb_pairs = gen_MP_Edits_IMDB(imdb, num_lines, fill_models=['BART'], n_grams=[1, 2, 3], nlp=nlp, bart=bart, scorer=scorer)
         if 'MNLI' in dataset:
-            mnli_hypos, mnli_prems = gen_MP_Edits_NLI(mnli_train, num_lines, fill_models=['BART'], n_grams=[1, 2, 3], nlp=nlp, bart=bart, scorer=scorer, filename = 'output/' + str(num_lines) + '_mnli')
+            mnli_pairs = gen_MPs_NLI(mnli_train, num_lines, fill_models=['BART'], n_grams=[1, 2, 3], nlp=nlp, bart=bart, scorer=scorer, filename = 'output/' + str(num_lines) + '_pairs_mnli')
         if 'SNLI' in dataset:
-            snli_hypos, snli_prems = gen_MP_Edits_NLI(snli_train, num_lines, fill_models=['BART'], n_grams=[1, 2, 3], nlp=nlp, bart=bart, scorer=scorer, filename = 'output/' + str(num_lines) + '_snli')
+            snli_hypos, snli_prems = gen_MP_Edits_NLI(snli_train, num_lines, fill_models=['BART'], n_grams=[1, 2, 3], nlp=nlp, bart=bart, scorer=scorer, filename = 'output/' + str(num_lines) + '_pairs_snli')
     
     ## TASK: PREDICTING TAGS ON MASK-FILLED EXAMPLES.
     if data_action == 'Predict':
@@ -514,20 +603,26 @@ def main(dataset, num_lines, data_action):
                 MNLI_Roberta.cuda()
 
             #MNLI_model = ClassificationModel("roberta", "roberta-mnli/checkpoint-146688-epoch-3", use_cuda = use_cuda)
-            mnli_hypos = pd.read_csv('output/' + str(num_lines) + '_mnli_hypos.csv')
-            mnli_prems = pd.read_csv('output/' + str(num_lines) + '_mnli_prems.csv')
-
+            #mnli_hypos = pd.read_csv('output/' + str(num_lines) + '_mnli_hypos.csv')
+            #mnli_prems = pd.read_csv('output/' + str(num_lines) + '_mnli_prems.csv')
+            mnli_pairs = pd.read_csv('output/' + str(num_lines) + '_pairs_mnli_cond_pairs.csv')
+            
             # tagging
-            mnli_tagged_hypos, mnli_contrast_hypos = predict_on_MP_NLI(mnli_hypos, MNLI_Roberta, len(mnli_hypos), 'hypothesis')
-            mnli_tagged_prems, mnli_contrast_prems = predict_on_MP_NLI(mnli_prems, MNLI_Roberta, len(mnli_prems), 'premise')
-            mnli_tagged_hypos.to_csv('output/' + str(num_lines) + '_mnli_tagged_hypos.csv')
-            mnli_tagged_prems.to_csv('output/' + str(num_lines) + '_mnli_tagged_prems.csv')
+            mnli_tagged_pairs, mnli_contrast_pairs = predict_on_MP_NLI(mnli_pairs, MNLI_Roberta, len(mnli_pairs), 'hypothesis')
+            mnli_tagged_pairs.to_csv('output/' + str(num_lines) + '_mnli_cond_pairs_tagged_hypos.csv')
+            mnli_contrast_pairs.to_csv('output/' + str(num_lines) + '_mnli_cond_pairs_contrast_hypos.csv')
+            
+            
 
-            mnli_contrast_hypos.to_csv('output/' + str(num_lines) + '_mnli_contrast_hypos.csv')
-            mnli_contrast_prems.to_csv('output/' + str(num_lines) + '_mnli_contrast_prems.csv')
+            #mnli_tagged_hypos, mnli_contrast_hypos = predict_on_MP_NLI(mnli_hypos, MNLI_Roberta, len(mnli_hypos), 'hypothesis')
+            # mnli_tagged_prems, mnli_contrast_prems = predict_on_MP_NLI(mnli_prems, MNLI_Roberta, len(mnli_prems), 'premise')
+            # mnli_tagged_hypos.to_csv('output/' + str(num_lines) + '_mnli_tagged_hypos.csv')
+            # mnli_tagged_prems.to_csv('output/' + str(num_lines) + '_mnli_tagged_prems.csv')
 
-            compute_metrics(mnli_tagged_hypos)
-            compute_metrics(mnli_tagged_prems)
+            # mnli_contrast_hypos.to_csv('output/' + str(num_lines) + '_mnli_contrast_hypos.csv')
+            # mnli_contrast_prems.to_csv('output/' + str(num_lines) + '_mnli_contrast_prems.csv')
+
+            compute_metrics(mnli_tagged_pairs)
 
         if 'SNLI' in dataset:
             # reading 
@@ -612,8 +707,3 @@ if __name__ == '__main__':
 #     return imdb_model
 
 
-test = pd.read_csv('MP-Edit/output/MNLI/840_mnli_tagged_hypos.csv')
-
-switches = zip(test['orig-label'], test['new-label'])
-switch_changes = Counter(switches)
-print(switch_changes)
