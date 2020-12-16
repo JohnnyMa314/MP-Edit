@@ -52,6 +52,26 @@ For num_lines = 840, MNLI label flips on hypothesis mask-infilling.
 
 ## TO DO:
 
+12-16-20 Meeting Agenda:
+
+- Discuss how to pick best fine-tuning mask+loss strategy
+	- Currently: Text Infilling from BART, Masked Language Model as Pre-train Objective, label smoothed cross entropy loss (BLUE)
+		- Other Mask options include ILM (Donahue), SpanBERT, etc. 
+		- Other Objective options include LM, Perm LM, MLM, Masked Seq-to-Seq, etc.
+	- Measures of **Perplexity** and **Average New Span Length** for evaluation. 
+
+- Discuss further analysis possible for `Label Flip` X `Flip Probability` 4 categories.
+	- Currently: visualizing counts for given data sample
+	- t-SNE viz by category? 
+	- Average Original (or Mask Infilled) Token Embeddings, cluster by category?
+	- More word level visualizations / PPL analysis.
+
+- Discuss success bug fixes and adjustments for mask filling.
+	- Currently: 5 < len(span) < 30 currently used, removing minimal pairs with too much distance (BERTScore < 0.8)
+	- Reliant on Wikipedia, has Youtube fragments, etc.
+	- Better heuristics possible? Quality vs Quantity tradeoff, all examples are "in-domain" ?
+
+
 11-25-20 Meeting Agenda:
 
 - Discuss the effects of conditional generation on generated hypothesis
