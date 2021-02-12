@@ -52,66 +52,21 @@ For num_lines = 840, MNLI label flips on hypothesis mask-infilling.
 
 ## TO DO:
 
-12-16-20 Meeting Agenda:
+12-16-20
+- [ ] Setup project on Greene cluster, gain more GPU memory.
+- [ ] Fine-tune for MNLI prem+hypo hypo mask infilling on BART Large
+	- [ ] Test various mask infill schemes, make sure compatible with fill_mask function.
+	- [ ] Compare Losses, PPLs, training times. 
+- [ ] Produce word embeddings/distance related visualization
+- [ ] Decide between BERT Score and W2V embeddings, implement prem+hypo distance. 
 
-- Discuss how to pick best fine-tuning mask+loss strategy
-	- Currently: Text Infilling from BART, Masked Language Model as Pre-train Objective, label smoothed cross entropy loss (BLUE)
-		- Other Mask options include ILM (Donahue), SpanBERT, etc. 
-		- Other Objective options include LM, Perm LM, MLM, Masked Seq-to-Seq, etc.
-	- Measures of **Perplexity** and **Average New Span Length** for evaluation. 
-
-- Discuss further analysis possible for `Label Flip` X `Flip Probability` 4 categories.
-	- Currently: visualizing counts for given data sample
-	- t-SNE viz by category? 
-	- Average Original (or Mask Infilled) Token Embeddings, cluster by category?
-	- More word level visualizations / PPL analysis.
-
-- Discuss success bug fixes and adjustments for mask filling.
-	- Currently: 5 < len(span) < 30 currently used, removing minimal pairs with too much distance (BERTScore < 0.8)
-	- Reliant on Wikipedia, has Youtube fragments, etc.
-	- Better heuristics possible? Quality vs Quantity tradeoff, all examples are "in-domain" ?
-
-
-11-25-20 Meeting Agenda:
-
-- Discuss the effects of conditional generation on generated hypothesis
-	- Increased domain specificity
-	- Draws from list of premise words
-	- No penatly for repetition
-	- Decreased grammaticallity
-		- Add some grammar parser?
-
-- Fairseq BART limitations: 
-	- Mask fill starts generating beyond mask when fine-tuned (?)
-	- Mask fill breaks when sampling, can only beam search
-	- Occasionally returns special token artifacts
-
-**Options:**
-
-- Move to HuggingFace
-	- BERT fill is not autoregressive, cannot do spans
-	- HF BART can only produce same length spans
-	- SpanBERT can only produce same length spans (?)
-
-- Reimplement Fairseq BART for Sampling
-	- Reimplement try 1: unsuccessful. 
-	- How to directly get mask-fill samples? N-Grams are created through beam search,  autoregressively, or through direct tokens?
-
-- Use additional beam search options
-	- Diverse Beam Search (diversity objective)
-	- Beam Search Sibling penalty
-	- Increase beam and Top K size?
-	- How to "tune" hyperparamters?
-
-- Feedback on how to quantify the generation "objecitve."
-	- Policy Gradient over label change
-	- Focus on "fragile" data instances?
-	- Define some objective based on mixture of label flip probabilities/pair similarities
-
-- Discuss basic heuristics used to filter generated examples:
-	- 5 < len(span) < 30 currently used
-	- Removing minimal pairs with too much distance (BERTScore < 0.8)
-	- Filtering out token artifacts using series of "txt.replace" 
+11-25-20
+- [x] Fine-tune prem+hypo mask infilling using BART-Base and Vishakh's sample code
+	- [ ] Reimplement using task == Denoising, other masking strategies
+- [ ] Generate new examples using fine-tuned BART
+- [x] Reorganize Github and File Directory
+- [x] Fix various bugs (similarity measures, string replacement by index, etc.)
+- [x] Create Utility Functions, separate from main script
 
 11-11-20
 - [x] Conditional Generation, Premise + Masked Hypothesis
