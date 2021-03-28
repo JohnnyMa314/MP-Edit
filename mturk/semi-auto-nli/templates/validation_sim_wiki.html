@@ -1,0 +1,159 @@
+<!-- You must include this JavaScript file -->
+<script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+<link href="https://s3.amazonaws.com/mturk-public/bs30/css/bootstrap.min.css" rel="stylesheet" />
+<section class="container" id="DataCollection" style="margin-bottom:15px; padding: 10px 10px; font-family: Verdana, Geneva, sans-serif; color:#333333; font-size:0.9em;">
+    <div class="row col-xs-12 col-md-12"><!-- Instructions -->
+        <div class="panel panel-primary">
+            <div class="panel-heading"><strong>Instructions</strong></div>
+
+            <div class="panel-body">
+                <p>The&nbsp;<a href="http://cds.nyu.edu/"  target="_blank">New York University Center for Data Science</a>&nbsp;is collecting your answers for use in research on computer understanding of 
+                English. Thank you for your help!
+            </p>
+            
+            <p class="li1">
+                <span class="s2">Your job is to figure out, based on a correct&nbsp;prompt <strong>(S1)</strong>, if&nbsp;another prompt <strong>(S2)</strong> is also correct:</span>
+            </p>
+            <ul class="ul1">
+                <li class="li1">
+                    <span class="s2">Choose <strong>definitely&nbsp;correct</strong>&nbsp;
+                    if any event or situation that can be described by S1 would also fit S2.<br/> 
+                    Example: <br>
+                    S1: <em>"A kitten with spots is playing with yarn."</em><br>
+                    S2: <em>"A cat is playing."</em></span>
+                    <p></p>
+                </li>
+            
+                <li class="li1">
+                    <span class="s2">Choose <strong>maybe correct</strong> if S2 
+                    could describe an event or situation that fit S1, but&nbsp;could also 
+                    describe sentences that don't fit S1. <br>
+                    Example: <br>
+                    S1: <em>"A kitten with spots is playing with yarn."</em><br>
+                    S2: <em>"A kitten&nbsp;is playing with yarn on a sofa."</em></span>
+                    <p></p>
+                </li>
+            
+                <li class="li1">
+                    <span class="s2">Choose <strong>definitely&nbsp;incorrect</strong>&nbsp;if any event or situation that 
+                    could possibly be described with S1 would not fit S2.&nbsp;<br/>
+                    Example: <br>
+                    S1: <em>"A kitten with spots is playing with yarn."</em><br> 
+                    S2: <em>"A puppy&nbsp;is playing with yarn."</em></span>
+                    <p></p>
+                </li>
+                
+                <li class="li1">
+                    <span class="s2">Choose <strong>I don't understand</strong>&nbsp;if there is something wrong with the prompts that 
+                    make them hard to understand (more than just a typo).<br/>
+                    Example: <br>
+                    S1: <em>"A kitten with spots is playing with yarn."</em><br>
+                    S2: <em>"Marie talks (Oct. 26-Nov."</em></span>
+                </li>
+
+            </ul>
+            <p class="li1">
+            <span class="s2"><em>​</em>We have already labeled one out of every 20 examples. 
+            Completing one of these examples yields a bonus of $0.20 for each response that matches our label&nbsp;for up to $1.
+            There are five examples that need to be labeled for each HIT. More questions? Check the <a href="https://sites.google.com/nyu.edu/nlu-mturk-faq/validation-wikipedia-text?authuser=1" target="_blank">FAQ</a>.
+            </span>
+            </p>
+            
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row col-xs-12 col-md-12"><!-- Instructions -->
+    <crowd-form answer-format="flatten-objects">
+        <div id="questions" style="font-family: Verdana, Geneva, sans-serif; font-size: 11.7px;">
+            <div id="q1">
+            <h5>Question 1</h5>
+            <p>S1: ${premise1}</p>
+            <p>S2: ${hypothesis1}</p>
+            <crowd-radio-group >
+                <crowd-radio-button name="e1" value="e" >definitely correct</crowd-radio-button>
+                <crowd-radio-button name="n1" value="n" >maybe correct</crowd-radio-button>
+                <crowd-radio-button name="c1" value="c" >definitely incorrect</crowd-radio-button>
+                <crowd-radio-button name="x1" value="x" >I don't understand</crowd-radio-button>
+            </crowd-radio-group>
+            </div>
+            <div id="q2" style="font-family: Verdana, Geneva, sans-serif; font-size: 11.7px;">
+            <h5>Question 2</h5>
+            <p>S1: ${premise2}</p>
+            <p>S2: ${hypothesis2}</p>
+            <crowd-radio-group>
+                <crowd-radio-button name="e2" value="e">definitely correct</crowd-radio-button>
+                <crowd-radio-button name="n2" value="n">maybe correct</crowd-radio-button>
+                <crowd-radio-button name="c2" value="c">definitely incorrect</crowd-radio-button>
+                <crowd-radio-button name="x2" value="x">I don't understand</crowd-radio-button>
+            </crowd-radio-group>
+            </div>
+            <div id="q3" style="font-family: Verdana, Geneva, sans-serif; font-size: 11.7px;">
+            <h5>Question 3</h5>
+            <p>S1: ${premise3}</p>
+            <p>S2: ${hypothesis3}</p>
+            <crowd-radio-group>
+                <crowd-radio-button name="e3" value="e">definitely correct</crowd-radio-button>
+                <crowd-radio-button name="n3" value="n">maybe correct</crowd-radio-button>
+                <crowd-radio-button name="c3" value="c">definitely incorrect</crowd-radio-button>
+                <crowd-radio-button name="x3" value="x">I don't understand</crowd-radio-button>
+            </crowd-radio-group>
+            </div>
+            <div id="q4" style="font-family: Verdana, Geneva, sans-serif; font-size: 11.7px;">
+            <h5>Question 4</h5>
+            <p>S1: ${premise4}</p>
+            <p>S2: ${hypothesis4}</p>
+            <crowd-radio-group>
+                <crowd-radio-button name="e4" value="e">definitely correct</crowd-radio-button>
+                <crowd-radio-button name="n4" value="n">maybe correct</crowd-radio-button>
+                <crowd-radio-button name="c4" value="c">definitely incorrect</crowd-radio-button>
+                <crowd-radio-button name="x4" value="x">I don't understand</crowd-radio-button>
+            </crowd-radio-group>
+            </div>
+            <div id="q5" style="font-family: Verdana, Geneva, sans-serif; font-size: 11.7px;">
+            <h5>Question 5</h5>
+            <p>S1: ${premise5}</p>
+            <p>S2: ${hypothesis5}</p>
+            <crowd-radio-group style="font-family: Verdana, Geneva, sans-serif; font-size: 11.7px;">
+                <crowd-radio-button name="e5" value="e">definitely correct</crowd-radio-button>
+                <crowd-radio-button name="n5" value="n">maybe correct</crowd-radio-button>
+                <crowd-radio-button name="c5" value="c">definitely incorrect</crowd-radio-button>
+                <crowd-radio-button name="x5" value="x">I don't understand</crowd-radio-button>
+            </crowd-radio-group>
+            </div>
+        </div>
+        <p></p>
+    </crowd-form>
+    
+    
+    </div>
+    
+     <script>
+     function validateForm() {
+        var count = 0
+        for (var i = 1; i <= 5; i++) {
+            var e = document.getElementsByName('e'+i)
+            var c = document.getElementsByName('c'+i)
+            var n = document.getElementsByName('n'+i)
+            var x = document.getElementsByName('x'+i)
+            if (e[0].checked || c[0].checked || n[0].checked ||x[0].checked) {
+                count = count + 1;
+            }
+        }
+        if (count == 5){
+            return true;
+        }
+        alert("You must check one of the radio buttons for each question before submitting.");
+        return false;
+        
+     }
+     document.querySelector('crowd-form').onsubmit = function(e ) {
+         if (!validateForm()) {
+             e.preventDefault();
+       }
+    }
+   </script>
+    
+</section>
+

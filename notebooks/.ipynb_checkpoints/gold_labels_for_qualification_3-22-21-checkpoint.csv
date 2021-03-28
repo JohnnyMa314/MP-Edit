@@ -1,0 +1,6 @@
+,line-num,premise,hypothesis,gold-label
+5762,1176,"We actually hope to expand our services as a result of the merger, she said.",The merger was beneficial because they will be able to provide better services.,neutral
+6739,1349,The lovely 200-year old house and garden are flush with orchids.,The garden of the house is filled with nothing but roses.,contradiction
+6272,5628,"they do not get referrals from the SEC and the AICPA, or because those organizations have made the information confidential.",The SEC and AICPA do not give referrals for employment..,neutral
+5937,1146,"However, a Harvard study showed that the covering residents made serious mistakes six times more often than even fatigued residents.",Covering residents made less mistakes as to not disappoint those they were covering for.,contradiction
+5736,7639,Helping to Prevent Fraud and Abuse in  GAO had long advocated increased funding specifically for activities to prevent fraud and abuse in the Medicare program.,Helping to Prevent Fraud and Abuse in GAO believes that fraud and abuse does not occur in the Medicare program.,contradiction

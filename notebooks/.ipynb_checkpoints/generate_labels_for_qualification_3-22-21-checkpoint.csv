@@ -1,0 +1,4 @@
+,line-num,tokens-masked,premise,hypothesis,mask-filled,gold-label,new-label,flip-class,weights
+2523,16741,gradient,Was he at last convinced of Alfred Inglethorp's guilt? ,We were sure this new information would exonerate Alfred Inglethorp.,We were hoping that this information would exonerate Alfred Inglethorp.,contradiction,contradiction,Uncertain-Same,0.95
+6495,1125,content-words,The Megaron Gyzi Museum to the north of the cable car station is housed in a beautiful 17th-century fortified house.,There is a cable car stop at the Megaron Gyzi Museum.,There is a cable car station to the south of the Megaron Gyzi Museum.,neutral,entailment,Uncertain-Flip,0.95
+1059,50044,data-slices,This is the best evidence yet of the truth of your story.,This might be all the evidence we need to believe your story.,This might be the evidence we need to believe your story.,neutral,neutral,Uncertain-Same,0.95

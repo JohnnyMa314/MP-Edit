@@ -1,0 +1,135 @@
+<!-- You must include this JavaScript file -->
+<script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+<!-- For the full list of available Crowd HTML Elements and their input/output documentation,
+      please refer to https://docs.aws.amazon.com/sagemaker/latest/dg/sms-ui-template-reference.html -->
+<!-- You must include crowd-form so that your task submits answers to MTurk -->
+<crowd-form answer-format="flatten-objects">
+    <p class="li1">
+        <span class="s2">
+            <i>Please read the full instructions carefully before starting.</i><br><br>
+            Your job is to figure out, based on a correct&nbsp;prompt <strong>(S1)</strong>, if&nbsp;another prompt <strong>(S2)</strong> is also correct:
+        </span>
+    </p>
+
+    <div id="questions">
+        <div id="q1">
+        <h4>Question 1</h4>
+        <p>S1: ${premise1}</p>
+        <p>S2: ${hypothesis1}</p>
+        <crowd-radio-group>
+            <crowd-radio-button name="e1" value="e">definitely correct</crowd-radio-button>
+            <crowd-radio-button name="n1" value="n">maybe correct</crowd-radio-button>
+            <crowd-radio-button name="c1" value="c">definitely incorrect</crowd-radio-button>
+            <crowd-radio-button name="x1" value="x">I don't understand</crowd-radio-button>
+        </crowd-radio-group>
+        </div>
+        <div id="q2">
+        <h4>Question 2</h4>
+        <p>S1: ${premise2}</p>
+        <p>S2: ${hypothesis2}</p>
+        <crowd-radio-group>
+            <crowd-radio-button name="e2" value="e">definitely correct</crowd-radio-button>
+            <crowd-radio-button name="n2" value="n">maybe correct</crowd-radio-button>
+            <crowd-radio-button name="c2" value="c">definitely incorrect</crowd-radio-button>
+            <crowd-radio-button name="x2" value="x">I don't understand</crowd-radio-button>
+        </crowd-radio-group>
+        </div>
+        <div id="q3">
+        <h4>Question 3</h4>
+        <p>S1: ${premise3}</p>
+        <p>S2: ${hypothesis3}</p>
+        <crowd-radio-group>
+            <crowd-radio-button name="e3" value="e">definitely correct</crowd-radio-button>
+            <crowd-radio-button name="n3" value="n">maybe correct</crowd-radio-button>
+            <crowd-radio-button name="c3" value="c">definitely incorrect</crowd-radio-button>
+            <crowd-radio-button name="x3" value="x">I don't understand</crowd-radio-button>
+        </crowd-radio-group>
+        </div>
+        <div id="q4">
+        <h4>Question 4</h4>
+        <p>S1: ${premise4}</p>
+        <p>S2: ${hypothesis4}</p>
+        <crowd-radio-group>
+            <crowd-radio-button name="e4" value="e">definitely correct</crowd-radio-button>
+            <crowd-radio-button name="n4" value="n">maybe correct</crowd-radio-button>
+            <crowd-radio-button name="c4" value="c">definitely incorrect</crowd-radio-button>
+            <crowd-radio-button name="x4" value="x">I don't understand</crowd-radio-button>
+        </crowd-radio-group>
+        </div>
+        <div id="q5">
+        <h4>Question 5</h4>
+        <p>S1: ${premise5}</p>
+        <p>S2: ${hypothesis5}</p>
+        <crowd-radio-group>
+            <crowd-radio-button name="e5" value="e">definitely correct</crowd-radio-button>
+            <crowd-radio-button name="n5" value="n">maybe correct</crowd-radio-button>
+            <crowd-radio-button name="c5" value="c">definitely incorrect</crowd-radio-button>
+            <crowd-radio-button name="x5" value="x">I don't understand</crowd-radio-button>
+        </crowd-radio-group>
+        </div>
+    </div>
+
+    <short-instructions>
+        <p>
+            Based on a correct&nbsp;prompt <strong>(S1)</strong>, figure out if&nbsp;another prompt <strong>(S2)</strong> is also correct.
+        </p>
+    </short-instructions>
+
+    <full-instructions header="Validation/Judgement Instructions">
+        <p>The&nbsp;<a href="http://cds.nyu.edu/"  target="_blank">New York University Center for Data Science</a>&nbsp;is collecting your answers for use in research on computer understanding of 
+            English. Thank you for your help!
+        </p>
+        
+        <p class="li1">
+            <span class="s2">Your job is to figure out, based on a correct&nbsp;prompt <strong>(S1)</strong>, if&nbsp;another prompt <strong>(S2)</strong> is also correct:</span>
+        </p>
+        <ul class="ul1">
+            <li class="li1">
+                <span class="s2">Choose <strong>definitely&nbsp;correct</strong>&nbsp;
+                if any event or situation that can be described by S1 would also fit S2.<br/> 
+                Example: <br>
+                S1: <em>"A kitten with spots is playing with yarn."</em><br>
+                S2: <em>"A cat is playing."</em></span>
+                <p></p>
+            </li>
+        
+            <li class="li1">
+                <span class="s2">Choose <strong>maybe correct</strong> if S2 
+                could describe an event or situation that fit S1, but&nbsp;could also 
+                describe sentences that don't fit S1. <br>
+                Example: <br>
+                S1: <em>"A kitten with spots is playing with yarn."</em><br>
+                S2: <em>"A kitten&nbsp;is playing with yarn on a sofa."</em></span>
+                <p></p>
+            </li>
+        
+            <li class="li1">
+                <span class="s2">Choose <strong>definitely&nbsp;incorrect</strong>&nbsp;if any event or situation that 
+                could possibly be described with S1 would not fit S2.&nbsp;<br/>
+                Example: <br>
+                S1: <em>"A kitten with spots is playing with yarn."</em><br> 
+                S2: <em>"A puppy&nbsp;is playing with yarn."</em></span>
+                <p></p>
+            </li>
+            
+            <li class="li1">
+                <span class="s2">Choose <strong>I don't understand</strong>&nbsp;if there is something wrong with the prompts that 
+                make them hard to understand (more than just a typo).<br/>
+                Example: <br>
+                S1: <em>"A kitten with spots is playing with yarn."</em><br>
+                S2: <em>"Marie talks (Oct. 26-Nov."</em></span>
+            </li>
+        
+        </ul>
+        
+        <p class="li1">
+            <span class="s2"><em>​</em>We have already labeled one out of every 20 examples. 
+            Completing one of these examples yields a bonus of $0.20 for each response that matches our label&nbsp;for up to $1.
+            There are five examples that need to be labeled for each HIT. More questions? Check the <a href="https://sites.google.com/nyu.edu/nlu-mturk-faq/validation-news-text?authuser=1" target="_blank">FAQ</a>.
+            </span>
+        </p>
+    </full-instructions>
+    
+    <p></p>
+</crowd-form>
+

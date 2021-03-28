@@ -1,0 +1,117 @@
+<!-- Bootstrap v3.0.3 -->
+<link href="https://s3.amazonaws.com/mturk-public/bs30/css/bootstrap.min.css" rel="stylesheet" />
+<section class="container" id="DataCollection" style="margin-bottom:15px; padding: 10px 10px; font-family: Verdana, Geneva, sans-serif; color:#333333; font-size:0.9em;">
+	<div class="row col-xs-12 col-md-12"><!-- Instructions -->
+		<div class="panel panel-primary">
+			<div class="panel-heading"><strong>Instructions</strong></div>
+
+			<div class="panel-body">
+				<p>
+					The&nbsp;<a href="http://cds.nyu.edu/" target="_blank">New York University Center for Data Science</a>&nbsp;is collecting your answers for use in research on computer understanding of English. Thank you for your help!
+				</p>
+
+				<p>
+					This task will involve reading a prompt and writing three sentences that relate to it. The prompt will&nbsp;describe&nbsp;a situation or event. Using only this description and what you know about the world, please write:
+				</p>
+
+				<ul>
+					<li>Write one sentence that is <strong>definitely correct</strong><em>&nbsp;</em>about the situation or event in the prompt.</li>
+					<li>Write one sentence that <strong>maybe correct</strong> about the situation or event in the prompt.</li>
+					<li>Write one sentence that is&nbsp;<strong>definitely incorrect</strong>&nbsp;about the situation or event in the prompt.</li>
+				</ul>
+
+				<p>
+					<span>
+						These prompts were taken from Wikipedia articles. If you recognize an individual, place, or event, please do not use outside knowledge about it to write your sentences. Please write sentences based only on the&nbsp;prompt and general beliefs or assumptions about what happens in the world.
+					</span>
+				</p>
+
+				<p>
+					<strong>Bonuses. </strong>We will ask four other workers to validate one out of every 50 sentences that we collect from these HITs. For every selected sentence that passes the validation phase, you will get bonus of $1, for up to $5.
+					If you have more questions, please consult our <a href="https://sites.google.com/nyu.edu/nlu-mturk-faq/writing-sentences?authuser=1" target="_blank">FAQ</a>.
+				</p>
+			</div>
+		</div>
+
+		<p><strong>Prompt:&nbsp;<br>
+			<span style="font-family:verdana,geneva,sans-serif;">
+				<span style="color:#0000CD;">
+					<span style="">${premise}</span>
+				</span>
+			</span></strong>
+			<br>
+		</p>
+
+		<p>
+			<span style="font-family:verdana,geneva,sans-serif;">
+				<label style="font-family: Verdana, Geneva, sans-serif; ">Definitely correct</label>
+			</span>
+			<span style="font-size: 11.7px; font-family: verdana, geneva, sans-serif; color: rgb(105, 105, 105);"><br>
+					Example: For the prompt "<i>The cottages near the shoreline, styled like plantation homes with large covered porches, are luxurious within; some come with private hot tubs.</i>", you could write <br>
+					"<i>The shoreline has plantation style homes near it, which are luxurious and often have covered porches or hot tubs.</i>
+				</span>
+			</span>
+		</p>
+
+		<div style="font-family: Verdana, Geneva, sans-serif; font-size: 11.7px;">
+			<span style="font-family: verdana, geneva, sans-serif;"><input class="form-control" id="correct" name="correct" placeholder="" style="font-family: Verdana, Geneva, sans-serif; line-height: 1.42857; width: 1100px;" type="text">
+			</span>
+		</div>
+
+		<div style="font-family: Verdana, Geneva, sans-serif; font-size: 11.7px;">&nbsp;</div>
+
+		<p>
+			<span style="font-family:verdana,geneva,sans-serif;">
+				<label style="font-family: Verdana, Geneva, sans-serif; ">Maybe correct</label>
+			</span>
+			<span style="font-size: 11.7px; font-family: verdana, geneva, sans-serif; color: rgb(105, 105, 105);"><br>
+				Example: For the prompt "<i>Government Executive magazine annually presents Government Technology Leadership Awards to recognize federal agencies and state governments for their excellent performance with information technology programs.</i>", you could write <br>
+				<i>"In addition to their annual Government Technology Leadership Award, Government Executive magazine also presents a cash prize for best dressed agent from a federal agency.</i>
+			</span>
+		</p>
+
+		<div style="font-family: Verdana, Geneva, sans-serif; font-size: 11.7px;">
+			<span style="font-family: verdana, geneva, sans-serif;"><input class="form-control" id="maybe" name="maybe" placeholder="" style="font-family: Verdana, Geneva, sans-serif; line-height: 1.42857; width: 1100px;" type="text">
+			</span>
+		</div>
+
+		<div style="font-family: Verdana, Geneva, sans-serif; font-size: 11.7px;">&nbsp;</div>
+
+		<p>
+			<span style="font-family:verdana,geneva,sans-serif;">
+				<label style="font-family: Verdana, Geneva, sans-serif; ">Definitely incorrect</label>
+				<span style="font-size: 11.7px; font-family: verdana, geneva, sans-serif; color: rgb(105, 105, 105);"><br>
+					Example: For the prompt "<i>Yes, he's still under arrest, which is why USAT's front-page reefer headline British Court Frees Chile's Pinochet is a bit off.</i>", you could write <br>
+					<i>"The headline `British Court Frees Chile's Pinochet' is correct, since the man is freely roaming the streets.</i>
+				</span>
+			</span>
+		</p>
+
+		<div style="font-family: Verdana, Geneva, sans-serif; font-size: 11.7px;">
+			<span style="font-family: verdana, geneva, sans-serif;"><input class="form-control" id="incorrect" name="incorrect" placeholder="" style="font-family: Verdana, Geneva, sans-serif; line-height: 1.42857; width: 1100px;" type="text">
+			</span>
+		</div>
+
+		<div style="font-family: Verdana, Geneva, sans-serif; font-size: 11.7px;">&nbsp;</div>
+
+
+		<p>
+			<span style="color: rgb(169, 169, 169); font-family: verdana, geneva, sans-serif; font-size: 0.9em; font-weight: bold;">Problems (optional)&nbsp; &nbsp;</span>
+			<em style="font-size: 0.9em; color: rgb(105, 105, 105);"><em>If something is wrong with the prompt that makes it difficult to understand, let us know here.</em></em>
+		</p>
+
+		<div><input class="form-control" id="problems" name="problems" placeholder="" style="font-family: Verdana, Geneva, sans-serif; width: 1100px;" type="text">
+			<span style="font-size: 0.9em; line-height: 1.6em;">&nbsp;</span>
+			<span style="font-size: 0.9em; line-height: 1.6em;">&nbsp;</span></div>
+		</div>
+</section>
+
+<p>
+	<a href="https://sites.google.com/nyu.edu/nlu-mturk-faq/writing-sentences?authuser=1" target="_blank"><!-- close container -->
+	<style type="text/css">td {
+		font-size:1.0em;
+		padding: 5px 5px;
+	}
+	</style>
+	</a>
+</p>

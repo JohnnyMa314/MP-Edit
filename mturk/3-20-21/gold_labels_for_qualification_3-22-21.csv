@@ -1,0 +1,6 @@
+,line-num,premise,hypothesis,gold-label
+6795,364,"The nearby Omura-san Park has 3,000 cherry trees, with different varieties blooming at different times of year.","The Omura-san Park is devoid of all plant life, including trees. ",contradiction
+2638,2752,um-hum it was amazing i went to the Far East uh back in October to do some training for TI and i uh,I did some training for TI in the Far East.  ,entailment
+7325,10563,"After all, one young man is much like another.""",After all it is true that one young man is much like another.,entailment
+3340,12305,and if it was up to her we wouldn't have one so you know she feels that kids are too dependent on it also,"She doesn't like the fact that we have one, but it is not up to her.",neutral
+4410,7321,"They aren't really property anarchists--quite the opposite, in fact.",They have claimed publicly that they are not property anarchists.,neutral
